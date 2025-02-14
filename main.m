@@ -3,6 +3,15 @@ clc
 clear
 warning('off', 'all');
 
+% Authors: Kimia Forghani, Yancy Diaz-Mercado
+%
+% Date Created: 02/14/2025
+%
+% Copyright (c) 2025
+% Collaborative Controls and Robotics Laboratory
+% University of Maryland, College Park
+%
+% All rights reserved.
 %init params
     timeStep = 0.048;           %Change this based on hardware
     n = 40;                     %Number of nodes in the chain
