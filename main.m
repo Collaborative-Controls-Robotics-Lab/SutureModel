@@ -1,7 +1,4 @@
 function main()
-clc
-clear
-warning('off', 'all');
 
 % Authors: Kimia Forghani, Yancy Diaz-Mercado
 %
@@ -12,12 +9,20 @@ warning('off', 'all');
 % University of Maryland, College Park
 %
 % All rights reserved.
+
+clc
+clear
+warning('off', 'all');
+
+% Global variable to track key presses
+    global pressedKeys;
+    pressedKeys = struct('w', false, 'a', false, 's', false, 'd', false);
+
 %init params
     timeStep = 0.048;           %Change this based on hardware
-    n = 40;                     %Number of nodes in the chain
-    ell_thread = n*5;           %Thread length
+    n = 30;                     %Number of nodes in the chain
+    ell_thread = 200;           %Thread length
     deltaL=ell_thread/(n-1);
-    needle_step=[0;0];
     separationEnforcementGain = 1e+1;
     SafetyDistance = 0.5;
 
@@ -32,7 +37,9 @@ warning('off', 'all');
     threadXY=threadXY'; %size(threadXY) = 2 X n
 
     % Create a figure for capturing key presses
-    hFig = figure('KeyPressFcn', @keyPress);
+    hFig = figure;
+    set(hFig, 'KeyPressFcn', @keyPress);
+    set(hFig, 'KeyReleaseFcn', @keyRelease); % Handle key release
 
     hNeedle =  plot(needle_pos(1,1), needle_pos(2,1), 'r-o');
     hold on
@@ -58,21 +65,21 @@ warning('off', 'all');
 %Choose your barrier function
 
 %Without Stiffness Lyapunov Function: suitable for silk suture
-    barrierCertificate = create_si_connectivity_barrier_certificate_with_obstacles('MaxSeparation',deltaL,'SafetyDistance', SafetyDistance,'BarrierGain',separationEnforcementGain,'N',n,'tri_verices',tri_vertices);
+%     barrierCertificate = create_si_connectivity_barrier_certificate_with_obstacles('MaxSeparation',deltaL,'SafetyDistance', SafetyDistance,'BarrierGain',separationEnforcementGain,'N',n,'tri_verices',tri_vertices);
 
 %With Stiffness Lyapunov Function: suitable for Polyamide suture
-    %barrierCertificate = create_si_connectivity_barrier_certificate_with_obstacles_stiff('MaxSeparation',deltaL,'SafetyDistance', SafetyDistance,'BarrierGain',separationEnforcementGain,'N',n,'tri_verices',tri_vertices);
+    barrierCertificate = create_si_connectivity_barrier_certificate_with_obstacles_stiff('MaxSeparation',deltaL,'SafetyDistance', SafetyDistance,'BarrierGain',separationEnforcementGain,'N',n,'tri_verices',tri_vertices);
 
 %%
 %initial thread vlocity
     threadXYVel = zeros(2,n); %Initially stationary 
 j=1;
 tic; %start timer
-while j<5000
+while j<1000
 
-    threadXYVel = 0.9* threadXYVel; %Damping effect Beta=0.9
+    threadXYVel = 0.8* threadXYVel; %Damping effect Beta=0.9
+    needle_step = getNeedleStep(); % Compute the movement based on active keys
     du = (needle_step)./timeStep;   %Needle velocity based on user input
-    needle_step =[0;0];             %Change user input back to zero
    
 %************************ Thread Update Start *************************
     [threadXYVel, duC, B(j,:), Btis(j,:)] = barrierCertificate(threadXYVel,threadXY,needle_pos_temp,du);
@@ -139,18 +146,11 @@ j=j+1;
 end    
 
  figure()
-    plot(1:j-1,B(:,:))
+    plot(1:j-1,B(:,1:5:end))
     title('h con1')
     xlabel('Iteration')
     ylabel('h(xi)')
-%     legend('node 1','node 10','node 20','node 30','node 40','node 50')
-
-
-%     figure()
-%     plot(2:j-1,1e3*Btis(2:j-1,:))
-%     xlabel('Iteration')
-%     ylabel('h(xi)')
-%     title('h obs1')
+    legend('node 1','node 6','node 11','node 16','node 21','node 26')
 
     figure()
     plot(2:j-1,1e3*Btis(2:j-1,1:n+1))
@@ -170,20 +170,42 @@ end
     ylabel('h(xi)')
     title('h obs3')
 
-function keyPress(~, event)
-        step_size = 0.475;  % How much the needle moves with each key press 
-        switch event.Key
-            case 'w'  % Move needle up
-                needle_step = + step_size.*[0;1];
-            case 's'  % Move needle down
-                needle_step = - step_size.*[0;1];
-            case 'a'  % Move needle left
-                needle_step = - step_size.*[1;0];
-            case 'd'  % Move needle right
-                needle_step = + step_size.*[1;0];
-                case 'q'  % Move needle right
-                needle_step = + step_size.*[0;0];
-        end
+%% Function to compute the needle step based on active keys
+function step = getNeedleStep()
+    step_size = 0.4; %Increase this for increased velocity  
+    step = [0; 0];
+    
+    if pressedKeys.w
+        step = step + step_size .* [0; 1]; % Up
+    end
+    if pressedKeys.s
+        step = step - step_size .* [0; 1]; % Down
+    end
+    if pressedKeys.a
+        step = step - step_size .* [1; 0]; % Left
+    end
+    if pressedKeys.d
+        step = step + step_size .* [1; 0]; % Right
+    end
+    % Normalize the step to keep consistent speed in diagonal movement
+    if norm(step) > 0
+        step = (step / norm(step)) * step_size;
+    end
+end
 
-    end 
+%% Function to handle key press events
+function keyPress(~, event)
+    if isfield(pressedKeys, event.Key)
+        pressedKeys.(event.Key) = true;
+    end
+end
+
+%% Function to handle key release events
+function keyRelease(~, event)
+    if isfield(pressedKeys, event.Key)
+        pressedKeys.(event.Key) = false;
+    end
+end
+
+ 
 end
