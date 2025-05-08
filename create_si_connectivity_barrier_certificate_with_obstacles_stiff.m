@@ -111,8 +111,8 @@ function [ si_barrier_certificate ] = create_si_connectivity_barrier_certificate
         gammaB_ext(end) = 1*gamma*(Bcon_ext(end))+ stateDiff_ext0*dr(:)./(4*maxSeparation.^2);
 
         gammaB_stiff=zeros(N-1,1);
-        gammaB_stiff(1:N-2) = 1*gamma*Bcon_stiff(1:end-1);
-        gammaB_stiff(end) = 1*gamma*(Bcon_stiff(end)) - 2*(normStateDiff_ext0.^2 - (2.0*maxSeparation).^2 ).* stateDiff_ext0 *dr(:);
+        gammaB_stiff(1:N-2) = 0.1*gamma*Bcon_stiff(1:end-1);
+        gammaB_stiff(end) = 0.1*gamma*(Bcon_stiff(end)) - 2*(normStateDiff_ext0.^2 - (2.0*maxSeparation).^2 ).* stateDiff_ext0 *dr(:);
         
         %Eq 19: B matrix
         gammaB = [gammaB3 ; gammaB_ext ;-gammaB_stiff+0.1 ; 1e1*Btis+1e-10 ];
