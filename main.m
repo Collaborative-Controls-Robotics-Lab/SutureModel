@@ -23,7 +23,7 @@ warning('off', 'all');
     n = 30;                     %Number of nodes in the chain
     ell_thread = 200;           %Thread length
     deltaL=ell_thread/(n-1);
-    separationEnforcementGain = 1e+1;
+    separationEnforcementGain = 10;
     SafetyDistance = 0.5;
 
 %%
